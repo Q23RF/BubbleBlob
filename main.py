@@ -21,7 +21,7 @@ async def on_ready():
 async def init(ctx, artist_name):
     artist = ctx.author
     cur.execute(f"""CREATE TABLE {artist_name} (
-    user_id INTEGER UNIQUE,
+    id INTEGER UNIQUE,
     nickname TEXT
     )""")
     cur.execute(f"""INSERT INTO artists VALUES (
@@ -33,18 +33,16 @@ async def init(ctx, artist_name):
 
 @bot.command(pass_context=True)
 async def subscribe(ctx, artist_name, nickname):
-    subscriber = ctx.author
-    subscriber_channel = await subscriber.create_dm()
+    channel = ctx.channel
     res = cur.execute(f"SELECT user_id FROM artists WHERE artist_name='{artist_name}'")
     artist_id = res.fetchone()[0]
     if artist_id is None:
-        await subscriber_channel.send("sth's wrong! We can't find the artist...")
+        await channel.send("sth's wrong! We can't find the artist...")
         return
     artist = await bot.fetch_user(artist_id)
-    print("adding "+subscriber.display_name+" to "+artist.display_name)
-    cur.execute(f"INSERT INTO {artist_name} VALUES ({subscriber.id}, '{nickname}')")
+    cur.execute(f"INSERT INTO {artist_name} VALUES ({channel.id}, '{nickname}')")
     con.commit()
-    await subscriber_channel.send("You have subscribed to "+artist_name+"\'s bubble!")
+    await channel.send("This channel have subscribed to "+artist_name+"\'s bubble!")
 
 
 @bot.command(pass_context=True)
@@ -59,20 +57,18 @@ async def bbl(ctx, text):
     res = cur.execute(f"SELECT * FROM {artist_name}")
     subscribers = res.fetchall()
     for s in subscribers:
-        user_id = s[0]
+        id = s[0]
         nickname = s[1]
-        subscriber = await bot.fetch_user(user_id)
-        dm_channel = await subscriber.create_dm()
-        await dm_channel.send(artist_name+": "+text.replace("y/n", nickname))
+        channel = bot.get_channel(id)
+        await channel.send(artist_name+": "+text.replace("y/n", nickname))
 
 @bot.command(pass_context=True)
 async def reply(ctx, artist_name, text):
-    subscriber = ctx.author
-    subscriber_channel = await subscriber.create_dm()
+    channel = ctx.channel
     res = cur.execute(f"SELECT user_id FROM artists WHERE artist_name='{artist_name}'")
     artist_id = res.fetchone()[0]
     if artist_id is None:
-        await subscriber_channel.send("sth's wrong! We can't find the artist...")
+        await channel.send("sth's wrong! We can't find the artist...")
         return
     artist = await bot.fetch_user(artist_id)
     artist_channel = await artist.create_dm()
@@ -82,25 +78,21 @@ async def reply(ctx, artist_name, text):
 # 輔助指令區
 @bot.command(pass_context=True)
 async def get_all_artists(ctx):
-    user = ctx.author
-    user_channel = await user.create_dm()
     res = cur.execute(f"SELECT artist_name FROM artists")
     values = res.fetchall()
-    await user_channel.send(values)
+    await ctx.channel.send(values)
 
 
 @bot.command(pass_context=True)
 async def get_all_subscriber(ctx, aid):
-    user = ctx.author
-    user_channel = await user.create_dm()
     res = cur.execute(f"SELECT artist_name FROM artists WHERE user_id={aid}")
     artist_name = res.fetchone()[0]
     if artist_name is None:
-        await user_channel.send("sth's wrong! We can't find the artist...")
+        await ctx.channel.send("sth's wrong! We can't find the artist...")
     else:
         res = cur.execute(f"SELECT * FROM {artist_name}")
         values = res.fetchall()
-        await user_channel.send(values)
+        await ctx.channel.send(values)
     
 
 try:
