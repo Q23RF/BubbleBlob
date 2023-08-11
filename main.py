@@ -42,14 +42,9 @@ async def subscribe(ctx, artist_name, nickname):
         return
     artist = await bot.fetch_user(artist_id)
     print("adding "+subscriber.display_name+" to "+artist.display_name)
-    res = cur.execute(f"SELECT artist_name FROM artists WHERE user_id={artist_id}")
-    artist_name = res.fetchone()[0]
-    if artist_name is None:
-        await subscriber_channel.send("sth's wrong! We can't find the artist...")
-    else:
-        cur.execute(f"INSERT INTO {artist_name} VALUES ({subscriber.id}, '{nickname}')")
-        con.commit()
-        await subscriber_channel.send("You have subscribed to "+artist.display_name+"\'s bubble!")
+    cur.execute(f"INSERT INTO {artist_name} VALUES ({subscriber.id}, '{nickname}')")
+    con.commit()
+    await subscriber_channel.send("You have subscribed to "+artist_name+"\'s bubble!")
 
 
 @bot.command(pass_context=True)
