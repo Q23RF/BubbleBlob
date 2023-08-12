@@ -80,8 +80,12 @@ async def bbl(ctx, text):
     for s in subscribers:
         id = s[0]
         nickname = s[1]
-        channel = bot.get_channel(id)
-        await channel.send(artist_name+": "+text.replace("y/n", nickname))
+        try:
+            channel = bot.get_channel(id)
+            await channel.send(artist_name+": "+text.replace("y/n", nickname))
+        except:
+            channel = bot.get_channel(1139588469677641828)
+            await channel.send(s[1]+"("+ str(id)+") failed to receive "+artist_name+"\'s bubble")
 
 @bot.command(pass_context=True)
 async def reply(ctx, artist_name, text):
