@@ -40,13 +40,34 @@ async def subscribe(ctx, artist_name, nickname):
         await channel.send("sth's wrong! We can't find the artist...")
         return
     artist = await bot.fetch_user(artist_id)
+    artist_channel = await artist.create_dm()
     cur.execute(f"INSERT INTO {artist_name} VALUES ({channel.id}, '{nickname}')")
     con.commit()
     await channel.send("This channel have subscribed to "+artist_name+"\'s bubble!")
+    await artist_channel.send("You have a new subscriber!")
 
 
 @bot.command(pass_context=True)
+async def unsubscribe(ctx, artist_name):
+    channel = ctx.channel
+    cur.execute(f"""DELETE FROM {artist_name}
+    WHERE id={channel.id}""")
+    await channel.send("unsubscribed "+artist_name)
+
+    
+@bot.command(pass_context=True)
+async def change_nickname(ctx, artist_name, nickname):
+    channel = ctx.channel
+    cur.execute(f"""UPDATE {artist_name}
+    SET nickname='{nickname}' WHERE id={channel.id}""")
+    con.commit()
+    await channel.send("nickname changed!")
+
+@bot.command(pass_context=True)
 async def bbl(ctx, text):
+    attachments = ctx.message.attachments
+    for a in attachments:
+        text += "\n" + a.url
     artist = ctx.author
     artist_channel = await artist.create_dm()
     res = cur.execute(f"SELECT artist_name FROM artists WHERE user_id={artist.id}")
