@@ -16,7 +16,7 @@ bot = commands.Bot(command_prefix='!',
 async def on_ready():
     print('We have logged in as {0.user}'.format(bot))
 
-
+# 帳號設定區
 @bot.command(pass_context=True)
 async def init(ctx, artist_name):
     artist = ctx.author
@@ -122,6 +122,7 @@ async def change_artist_name(ctx, new_name):
         await artist_channel.send("Artist\'s name changed!")
 
 
+# 暱稱更新區
 @bot.command(pass_context=True)
 async def change_nickname(ctx, artist_name, nickname):
     channel = ctx.channel
@@ -129,6 +130,7 @@ async def change_nickname(ctx, artist_name, nickname):
     SET nickname='{nickname}' WHERE id={channel.id}""")
     con.commit()
     await channel.send("nickname changed!")
+
 
 @bot.command(pass_context=True)
 async def change_artist_nickname(ctx, artist_name, artist_nickname):
@@ -138,6 +140,8 @@ async def change_artist_nickname(ctx, artist_name, artist_nickname):
     con.commit()
     await channel.send("artist\'s nickname changed!")
 
+
+# 泡泡對話區
 @bot.command(pass_context=True)
 async def bbl(ctx, text):
     attachments = ctx.message.attachments
@@ -176,9 +180,16 @@ async def reply(ctx, artist_name, text):
     artist = await bot.fetch_user(artist_id)
     artist_channel = await artist.create_dm()
     await artist_channel.send(text)
-        
+
 
 # 輔助指令區
+@bot.command()
+async def submit(ctx, arg):
+    channel = bot.get_channel(1140266438364512346)
+    await channel.send("投稿:" + arg)
+    return
+
+
 @bot.command(pass_context=True)
 async def get_all_artists(ctx):
     res = cur.execute(f"SELECT artist_name FROM artists")
