@@ -32,6 +32,39 @@ async def init(ctx, artist_name):
 
 
 @bot.command(pass_context=True)
+async def close(ctx, artist_name):
+    artist = ctx.author
+    artist_channel = ctx.channel
+    res = cur.execute(f"SELECT artist_name FROM artists WHERE user_id='{artist.id}'")
+    name = res.fetchone()[0]
+    if name != artist_name:
+        await artist_channel.send("The artist name you entered doesn\'t match.")
+    else:
+        res = cur.execute(f"SELECT id FROM {artist_name}")
+        subscriber_ids = res.fetchall()
+        for sid in subscriber_ids:
+            channel = bot.get_channel(sid)
+            await channel.send(artist_name+" have closed their artist account.")
+        cur.execute(f"DELETE FROM artists WHERE user_id={artist.id}")
+        cur.execute(f"DROP TABLE {artist_name}")
+        con.commit()
+        await artist_channel.send("The artist account has been closed.")
+
+
+@bot.command(pass_context=True)
+async def set_welcome(ctx, welcome):
+    artist = ctx.author
+    channel = ctx.channel
+    try:
+        cur.execute(f"""UPDATE artists
+        SET welcome='{welcome}' WHERE user_id={artist.id}""")
+        con.commit()
+        await channel.send("Welcome message updated!")
+    except:
+        await channel.send("Welcome message update failed.")
+
+
+@bot.command(pass_context=True)
 async def subscribe(ctx, artist_name, nickname):
     channel = ctx.channel
     res = cur.execute(f"SELECT user_id FROM artists WHERE artist_name='{artist_name}'")
@@ -41,9 +74,14 @@ async def subscribe(ctx, artist_name, nickname):
         return
     artist = await bot.fetch_user(artist_id)
     artist_channel = await artist.create_dm()
-    cur.execute(f"INSERT INTO {artist_name} VALUES ({channel.id}, '{nickname}')")
+    cur.execute(f"INSERT INTO {artist_name} VALUES ({channel.id}, '{nickname}', 'none')")
     con.commit()
-    await channel.send("This channel have subscribed to "+artist_name+"\'s bubble!")
+    res = cur.execute(f"SELECT welcome FROM artists WHERE user_id={artist_id}")
+    welcome = res.fetchone()[0]
+    if welcome == "none":
+        await channel.send("This channel have subscribed to "+artist_name+"\'s bubble!")
+    else:
+        await channel.send(welcome)
     await artist_channel.send("You have a new subscriber!")
 
 
@@ -52,9 +90,36 @@ async def unsubscribe(ctx, artist_name):
     channel = ctx.channel
     cur.execute(f"""DELETE FROM {artist_name}
     WHERE id={channel.id}""")
+    con.commit()
     await channel.send("unsubscribed "+artist_name)
 
-    
+
+@bot.command(pass_context=True)
+async def change_artist_name(ctx, new_name):
+    artist = ctx.author
+    artist_channel = ctx.channel
+    res = cur.execute(f"""SELECT artist_name FROM artists
+    WHERE user_id={artist.id}""")
+    old_name = res.fetchone()[0]
+    if old_name == None:
+        await artist_channel.send("The artist name you entered doesn\'t match.")
+    else:
+        res = cur.execute(f"""SELECT * FROM {old_name}""")
+        subscribers = res.fetchall()
+        for s in subscribers:
+            id = s[0]
+            nickname = s[1]
+            channel = bot.get_channel(id)
+            msg = s[1]+", "+old_name+" have changed their name to "+new_name+"!"
+            await channel.send(msg)
+        cur.execute(f"""ALTER TABLE {old_name}
+        RENAME TO {new_name};""")
+        cur.execute(f"""UPDATE artists
+        SET artist_name='{new_name}' WHERE user_id={artist.id}""")
+        con.commit()
+        await artist_channel.send("Artist\'s name changed!")
+
+
 @bot.command(pass_context=True)
 async def change_nickname(ctx, artist_name, nickname):
     channel = ctx.channel
@@ -62,6 +127,14 @@ async def change_nickname(ctx, artist_name, nickname):
     SET nickname='{nickname}' WHERE id={channel.id}""")
     con.commit()
     await channel.send("nickname changed!")
+
+@bot.command(pass_context=True)
+async def change_artist_nickname(ctx, artist_name, artist_nickname):
+    channel = ctx.channel
+    cur.execute(f"""UPDATE {artist_name}
+    SET artist_nickname='{artist_nickname}' WHERE id={channel.id}""")
+    con.commit()
+    await channel.send("artist\'s nickname changed!")
 
 @bot.command(pass_context=True)
 async def bbl(ctx, text):
@@ -80,12 +153,11 @@ async def bbl(ctx, text):
     for s in subscribers:
         id = s[0]
         nickname = s[1]
-        try:
-            channel = bot.get_channel(id)
-            await channel.send(artist_name+": "+text.replace("y/n", nickname))
-        except:
-            channel = bot.get_channel(1139588469677641828)
-            await channel.send(s[1]+"("+ str(id)+") failed to receive "+artist_name+"\'s bubble")
+        artist_nickname = s[2]
+        if artist_nickname == "none":
+            artist_nickname = artist_name
+        channel = bot.get_channel(id)
+        await channel.send(artist_nickname+": "+text.replace("y/n", nickname))
 
 @bot.command(pass_context=True)
 async def reply(ctx, artist_name, text):
