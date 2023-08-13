@@ -22,10 +22,11 @@ async def init(ctx, artist_name):
     artist = ctx.author
     cur.execute(f"""CREATE TABLE {artist_name} (
     id INTEGER UNIQUE,
-    nickname TEXT
+    nickname TEXT,
+    artist_nickname TEXT DEFAULT 'none'
     )""")
     cur.execute(f"""INSERT INTO artists VALUES (
-    {artist.id}, '{artist_name}')""")
+    {artist.id}, '{artist_name}', 'none')""")
     con.commit()
     artist_channel = await artist.create_dm()
     await artist_channel.send("You have successfully registered as an artist!")
@@ -159,7 +160,8 @@ async def bbl(ctx, text):
             artist_nickname = artist_name
         channel = bot.get_channel(id)
         try:
-            await channel.send(artist_nickname+": "+text.replace("y/n", nickname))
+            msg = "("+artist_name+")"+artist_nickname+": "+text.replace("y/n", nickname)
+            await channel.send(msg)
         except:
             print(str(id)+" failed to receive bbl from "+artist_name)
 
