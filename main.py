@@ -157,7 +157,10 @@ async def bbl(ctx, text):
         if artist_nickname == "none":
             artist_nickname = artist_name
         channel = bot.get_channel(id)
-        await channel.send(artist_nickname+": "+text.replace("y/n", nickname))
+        try:
+            await channel.send(artist_nickname+": "+text.replace("y/n", nickname))
+        except:
+            print(str(id)+" failed to receive bbl from "+artist_name)
 
 @bot.command(pass_context=True)
 async def reply(ctx, artist_name, text):
