@@ -78,6 +78,7 @@ async def subscribe(ctx, artist_name, nickname):
     con.commit()
     res = cur.execute(f"SELECT welcome FROM artists WHERE user_id={artist_id}")
     welcome = res.fetchone()[0]
+    welcome = welcome.replace("y/n", nickname)
     if welcome == "none":
         await channel.send("This channel have subscribed to "+artist_name+"\'s bubble!")
     else:
