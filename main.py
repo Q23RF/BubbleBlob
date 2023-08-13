@@ -109,11 +109,14 @@ async def change_artist_name(ctx, new_name):
         res = cur.execute(f"""SELECT * FROM {old_name}""")
         subscribers = res.fetchall()
         for s in subscribers:
-            id = s[0]
-            nickname = s[1]
-            channel = bot.get_channel(id)
-            msg = s[1]+", "+old_name+" have changed their name to "+new_name+"!"
-            await channel.send(msg)
+            try:
+                id = s[0]
+                nickname = s[1]
+                channel = bot.get_channel(id)
+                msg = s[1]+", "+old_name+" have changed their name to "+new_name+"!"
+                await channel.send(msg)
+            except:
+                continue
         cur.execute(f"""ALTER TABLE {old_name}
         RENAME TO {new_name};""")
         cur.execute(f"""UPDATE artists

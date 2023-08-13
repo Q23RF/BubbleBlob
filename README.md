@@ -3,6 +3,7 @@
 
 以Discord機器人(BubbleBlob#2986)實作的仿泡泡服務。
 ## 使用方式
+
 ### 藝人端
 - 使用!init指令開通藝人帳號
 - 私訊機器人使用!bbl指令發布泡泡訊息
@@ -12,30 +13,75 @@
 - 在您想用於收取泡泡訊息的頻道使用!subscribe指令訂閱藝人
 - 機器人會將藝人發布的泡泡訊息轉傳至該頻道
 - 在該頻道使用!reply指令向藝人傳送匿名回覆
+
+
 ## 指令語法
-> 中括號都不用打
-### !init [artist_name]
-開通藝人帳號
-### !close [artist_name] 
-(限藝人使用)刪除藝人帳號
-### !set_welcome [msg] 
-(限藝人使用)將訂閱歡迎訊息設置為msg
-### !change_artist_name [new_name]
-(限藝人使用)將藝人名稱更新為new_name
-### !bbl [content]
-(限藝人使用)輸入y/n在訂閱者端會自動替換為該頻道之暱稱
-### !subscribe [artist_name] [nickname]
-在當前頻道訂閱藝人
-### !unsubscribe [artist_name] 
-在當前頻道取消訂閱藝人
-### !change_nickname [artist_name] [nickname]
-將暱稱更新為nickname
-### !change_artist_nickname [artist_name] [artist_nickname]
-將藝人暱稱更新為artist_nickname
-### !reply [artist_name] [content]
-向指定藝人傳送匿名回覆
-### !get_all_artists
-取得目前已註冊的artists名單
+
+:::    success
+中括號都不用打
+:::
+
+### 開通藝人帳號
+> !init [artist_name]
+
+將使用指令的DC帳號註冊為藝人。**一個DC帳號只能開通一個藝人帳號。**
+
+### 刪除藝人帳號
+> !close [artist_name] 
+
+只有該藝人帳號擁有者可以刪除帳號，所有訂閱者都會收到刪除通知。**此功能不可回逆**，刪除帳號後所有訂閱者資訊都會遺失，但該DC帳號可以重新註冊為藝人。
+
+### 歡迎訊息設置
+> !set_welcome [msg] 
+
+藝人用戶可以使用此指令將訂閱歡迎訊息設置為```[msg]```。
+
+### 藝人名稱更新
+>!change_artist_name [new_name]
+
+只有該藝人帳號擁有者可以更新名稱。
+
+### 發送泡泡訊息
+> !bbl [msg]
+
+藝人用戶可以使用這個指令向所有訂閱者發送泡泡訊息```[msg]```。輸入y/n在訂閱者端會自動替換為該頻道之暱稱，圖片可以發送但必須配有文字內容。
+
+### 訂閱藝人
+> !subscribe [artist_name] [nickname]
+
+使用此指令會在當前頻道訂閱藝人，之後就能在該頻道收取泡泡訊息，其中y/n會被替換為```[nickname]```。
+
+### 取消訂閱
+> !unsubscribe [artist_name] 
+在當前頻道取消訂閱藝人。
+
+### 訂閱者暱稱更新
+> !change_nickname [artist_name] [nickname]
+
+訂閱者用戶可以使用這個指令將```[artist_name]```藝人泡泡訊息中對自己的暱稱更新為```[nickname]```。
+
+### 藝人暱稱更新
+> !change_artist_nickname [artist_name] [artist_nickname]
+
+訂閱者用戶可以使用這個指令將藝人在訂閱頻道中顯示的暱稱更新為```[artist_nickname]```。
+
+### 傳送匿名回覆
+> !reply [artist_name] [content]
+
+向```[artist_name]```藝人傳送匿名回覆。
+
+### 取得藝人名單
+> !get_all_artists
+
+取得所有目前已註冊的藝人名稱。
+
+
+## 匿名投稿功能
+> !submit [msg] 
+
+私訊使用指令，機器人會在匿名區發布「投稿: ```[msg]```」。
+
+
 ## 推薦設定
 ### 藝人
 透過私訊開通泡泡、發布訊息及接收回覆即可。
