@@ -16,14 +16,22 @@
 > 中括號都不用打
 ### !init [artist_name]
 開通藝人帳號
+### !close [artist_name] 
+(限藝人使用)刪除藝人帳號
+### !set_welcome [msg] 
+(限藝人使用)將訂閱歡迎訊息設置為msg
+### !change_artist_name [new_name]
+(限藝人使用)將藝人名稱更新為new_name
+### !bbl [content]
+(限藝人使用)輸入y/n在訂閱者端會自動替換為該頻道之暱稱
 ### !subscribe [artist_name] [nickname]
 在當前頻道訂閱藝人
-### !subscribe [artist_name] 
+### !unsubscribe [artist_name] 
 在當前頻道取消訂閱藝人
 ### !change_nickname [artist_name] [nickname]
 將暱稱更新為nickname
-### !bbl [content]
-輸入y/n在訂閱者端會自動替換為該頻道之暱稱
+### !change_artist_nickname [artist_name] [artist_nickname]
+將藝人暱稱更新為artist_nickname
 ### !reply [artist_name] [content]
 向指定藝人傳送匿名回覆
 ### !get_all_artists
