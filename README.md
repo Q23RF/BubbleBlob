@@ -30,7 +30,7 @@
 將使用指令的DC帳號註冊為藝人。**一個DC帳號只能開通一個藝人帳號。**
 
 ### 刪除藝人帳號
-> !close [artist_name] 
+> !close [artist_name]
 
 只有該藝人帳號擁有者可以刪除帳號，所有訂閱者都會收到刪除通知。**此功能不可回逆**，刪除帳號後所有訂閱者資訊都會遺失，但該DC帳號可以重新註冊為藝人。
 
@@ -59,19 +59,19 @@
 在當前頻道取消訂閱藝人。
 
 ### 訂閱者暱稱更新
-> !change_nickname [artist_name] [nickname]
+> !change_nickname [nickname]
 
-訂閱者用戶可以使用這個指令將```[artist_name]```藝人泡泡訊息中對自己的暱稱更新為```[nickname]```。
+在已訂閱藝人的頻道使用，訂閱者用戶可以使用這個指令將該藝人泡泡訊息中對自己的暱稱更新為```[nickname]```。
 
 ### 藝人暱稱更新
-> !change_artist_nickname [artist_name] [artist_nickname]
+> !change_artist_nickname [artist_nickname]
 
 訂閱者用戶可以使用這個指令將藝人在訂閱頻道中顯示的暱稱更新為```[artist_nickname]```。
 
 ### 傳送匿名回覆
-> !reply [artist_name] [content]
+> !reply [content]
 
-向```[artist_name]```藝人傳送匿名回覆。
+在已訂閱藝人的頻道使用，向該藝人傳送匿名回覆。
 
 ### 取得藝人名單
 > !get_all_artists
