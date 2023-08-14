@@ -107,12 +107,12 @@ async def subscribe(ctx, artist_name, nickname):
         await channel.send("Subscription failed.")
 
 @bot.command(pass_context=True)
-async def unsubscribe(ctx, artist_name):
+async def unsubscribe(ctx):
     channel = ctx.channel
     cur.execute(f"""DELETE FROM subscriptions
     WHERE channel_id={channel.id}""")
     con.commit()
-    await channel.send("unsubscribed "+artist_name)
+    await channel.send("unsubscribed")
 
 
 @bot.command(pass_context=True)
