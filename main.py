@@ -17,14 +17,27 @@ async def on_ready():
     print('We have logged in as {0.user}'.format(bot))
 
 
+
 @bot.event
 async def on_message(message):
-	if message.author == bot.user:
-		return
-	if message.content == "!inc":
-		await message.channel.send("++")
-        
-	await bot.process_commands(message)
+    if message.author == bot.user:
+        return
+    if message.content == "!inc":
+        res = cur.execute("SELECT * FROM subscriptions")
+        values = res.fetchall()
+        for v in values:
+            channel_id = v[0]
+            artist_id = v[1]
+            cnt = v[2]
+            subscriber_channel = bot.get_channel(channel_id)
+            try:
+                await subscriber_channel.send("🫧"+str(cnt))
+            except:
+                print(str(channel_id)+" has been deleted, skipping...")
+        cur.execute("UPDATE subscriptions SET cnt=cnt+1")
+        con.commit()
+        await message.channel.send("++")
+    await bot.process_commands(message)
 
 # 帳號設定區
 @bot.command(pass_context=True)
@@ -32,11 +45,6 @@ async def init(ctx, artist_name):
     artist = ctx.author
     artist_channel = ctx.channel
     try:
-        cur.execute(f"""CREATE TABLE {artist_name} (
-        id INTEGER UNIQUE,
-        nickname TEXT,
-        artist_nickname TEXT DEFAULT 'none'
-        )""")
         cur.execute(f"""INSERT INTO artists VALUES (
         {artist.id}, '{artist_name}', 'none')""")
         con.commit()
@@ -49,20 +57,15 @@ async def init(ctx, artist_name):
 async def close(ctx, artist_name):
     artist = ctx.author
     artist_channel = ctx.channel
-    res = cur.execute(f"SELECT artist_name FROM artists WHERE user_id='{artist.id}'")
-    name = res.fetchone()[0]
-    if name != artist_name:
-        await artist_channel.send("The artist name you entered doesn\'t match.")
-    else:
-        res = cur.execute(f"SELECT id FROM {artist_name}")
-        subscriber_ids = res.fetchall()
-        for sid in subscriber_ids:
-            channel = bot.get_channel(sid)
-            await channel.send(artist_name+" have closed their artist account.")
-        cur.execute(f"DELETE FROM artists WHERE user_id={artist.id}")
-        cur.execute(f"DROP TABLE {artist_name}")
-        con.commit()
-        await artist_channel.send("The artist account has been closed.")
+    res = cur.execute(f"SELECT channel_id FROM subscriptions WHERE artist_id={artist.id}")
+    channel_ids = res.fetchall()
+    for channel_id in channel_ids:
+        channel = bot.get_channel(channel_id)
+        await channel.send("The artist account has been closed.")
+    cur.execute(f"DELETE FROM artists WHERE user_id={artist.id}")
+    cur.execute(f"DELETE FROM subscriptions WHERE artist_id={artist.id}")
+    con.commit()
+    await artist_channel.send("The artist account has been closed.")
 
 
 @bot.command(pass_context=True)
@@ -89,7 +92,8 @@ async def subscribe(ctx, artist_name, nickname):
             return
         artist = await bot.fetch_user(artist_id)
         artist_channel = await artist.create_dm()
-        cur.execute(f"INSERT INTO {artist_name} VALUES ({channel.id}, '{nickname}', 'none')")
+        cur.execute(f"""INSERT INTO subscriptions VALUES
+        ({channel.id}, {artist.id}, 0, '{nickname}', 'none')""")
         con.commit()
         res = cur.execute(f"SELECT welcome FROM artists WHERE user_id={artist_id}")
         welcome = res.fetchone()[0]
@@ -105,8 +109,8 @@ async def subscribe(ctx, artist_name, nickname):
 @bot.command(pass_context=True)
 async def unsubscribe(ctx, artist_name):
     channel = ctx.channel
-    cur.execute(f"""DELETE FROM {artist_name}
-    WHERE id={channel.id}""")
+    cur.execute(f"""DELETE FROM subscriptions
+    WHERE channel_id={channel.id}""")
     con.commit()
     await channel.send("unsubscribed "+artist_name)
 
@@ -142,19 +146,21 @@ async def change_artist_name(ctx, new_name):
 
 # 暱稱更新區
 @bot.command(pass_context=True)
-async def change_nickname(ctx, artist_name, nickname):
+async def change_nickname(ctx, nickname):
     channel = ctx.channel
-    cur.execute(f"""UPDATE {artist_name}
-    SET nickname='{nickname}' WHERE id={channel.id}""")
+    cur.execute(f"""UPDATE subscriptions
+    SET nickname='{nickname}'
+    WHERE channel_id={channel.id}""")
     con.commit()
     await channel.send("nickname changed!")
 
 
 @bot.command(pass_context=True)
-async def change_artist_nickname(ctx, artist_name, artist_nickname):
+async def change_artist_nickname(ctx, artist_nickname):
     channel = ctx.channel
-    cur.execute(f"""UPDATE {artist_name}
-    SET artist_nickname='{artist_nickname}' WHERE id={channel.id}""")
+    cur.execute(f"""UPDATE subscriptions
+    SET artist_nickname='{artist_nickname}'
+    WHERE channel_id={channel.id}""")
     con.commit()
     await channel.send("artist\'s nickname changed!")
 
@@ -165,25 +171,24 @@ async def bbl(ctx, text):
     attachments = ctx.message.attachments
     artist = ctx.author
     artist_channel = await artist.create_dm()
-    res = cur.execute(f"SELECT artist_name FROM artists WHERE user_id={artist.id}")
+    res = cur.execute(f"""SELECT artist_name FROM artists
+    WHERE user_id={artist.id}""")
     artist_name = res.fetchone()[0]
-    if artist_name is None:
-        await artist_channel.send("You\'re not an artist yet.")
-        return
-    res = cur.execute(f"SELECT * FROM {artist_name}")
-    subscribers = res.fetchall()
-    for s in subscribers:
-        id = s[0]
-        nickname = s[1]
-        artist_nickname = s[2]
+    res = cur.execute(f"""SELECT * FROM subscriptions
+    WHERE artist_id={artist.id}""")
+    subscription = res.fetchall()
+    for s in subscription:
+        channel_id = s[0]
+        nickname = s[3]
+        artist_nickname = s[4]
         if artist_nickname == "none":
             artist_nickname = artist_name
-        channel = bot.get_channel(id)
+        channel = bot.get_channel(channel_id)
+        msg = "("+artist_name+")"+artist_nickname+": "+text.replace("y/n", nickname)
         try:
-            msg = "("+artist_name+")"+artist_nickname+": "+text.replace("y/n", nickname)
             await channel.send(msg, files=[await f.to_file() for f in attachments])
         except:
-            print(str(id)+" failed to receive bbl from "+artist_name)
+            print(str(channel_id)+" failed to receive bbl from "+artist_name)
 
 @bot.command(pass_context=True)
 async def reply(ctx, text):
@@ -223,40 +228,19 @@ async def get_all_artists_data(ctx):
 
 @bot.command(pass_context=True)
 @commands.is_owner()
-async def get_all_subscribers(ctx, aid):
-    res = cur.execute(f"SELECT artist_name FROM artists WHERE user_id={aid}")
-    artist_name = res.fetchone()[0]
-    res = cur.execute(f"SELECT * FROM {artist_name}")
+async def get_all_subscribers_data(ctx, aid):
+    res = cur.execute(f"SELECT * FROM subscriptions WHERE artist_id={aid}")
     values = res.fetchall()
     await ctx.channel.send(values)
 
 
 @bot.command(pass_context=True)
 @commands.is_owner()
-async def create_sub_table(ctx):
-    await ctx.channel.send("creating...")
-    cur.execute(f"""CREATE TABLE subscriptions (
-    channel_id INTEGER UNIQUE,
-    artist_id INTEGER
-    )""")
+async def reset_cnt(ctx):
+    cur.execute(f"""UPDATE subscriptions
+    SET cnt=0""")
     con.commit()
-    res = cur.execute(f"SELECT * FROM artists")
-    values = res.fetchall()
-    for artist in values:
-        artist_id = artist[0]
-        artist_name = artist[1]
-        print("fetching from "+artist_name)
-        res = cur.execute(f"SELECT id FROM {artist_name}")
-        channel_ids = res.fetchall()
-        for ci in channel_ids:
-            channel_id = ci[0]
-            try:
-                cur.execute(f"""INSERT INTO subscriptions
-                VALUES ({channel_id}, {artist_id})""")
-                con.commit()
-            except:
-                print("The channel subscribed to multiple artists, skipping insertion...")
-
+    await ctx.channel.send("done!")
 
 
 try:
