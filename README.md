@@ -61,7 +61,7 @@
 ### 訂閱者暱稱更新
 > !change_nickname [nickname]
 
-在已訂閱藝人的頻道使用，訂閱者用戶可以使用這個指令將該藝人泡泡訊息中對自己的暱稱更新為```[nickname]```。
+在已訂閱藝人的頻道使用，將該藝人泡泡訊息中對自己的暱稱更新為```[nickname]```。
 
 ### 藝人暱稱更新
 > !change_artist_nickname [artist_nickname]
