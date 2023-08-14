@@ -1,7 +1,5 @@
 # BubbleBlob
-> [點這裡加入官方伺服器](https://t.co/GpORqHYbEo)
-
-> [點這裡將機器人加入伺服器](https://t.co/uJqjtSgcfG)
+| [點這裡加入官方伺服器](https://t.co/GpORqHYbEo) | [點這裡將機器人加入伺服器](https://t.co/uJqjtSgcfG) |
 
 以Discord機器人(BubbleBlob#2986)實作的仿泡泡服務。
 ## 推薦設定
