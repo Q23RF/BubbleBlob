@@ -16,6 +16,16 @@ bot = commands.Bot(command_prefix='!',
 async def on_ready():
     print('We have logged in as {0.user}'.format(bot))
 
+
+@bot.event
+async def on_message(message):
+	if message.author == bot.user:
+		return
+	if message.content == "!inc":
+		await message.channel.send("++")
+        
+	await bot.process_commands(message)
+
 # 帳號設定區
 @bot.command(pass_context=True)
 async def init(ctx, artist_name):
@@ -176,9 +186,9 @@ async def bbl(ctx, text):
             print(str(id)+" failed to receive bbl from "+artist_name)
 
 @bot.command(pass_context=True)
-async def reply(ctx, artist_name, text):
+async def reply(ctx, text):
     channel = ctx.channel
-    res = cur.execute(f"SELECT user_id FROM artists WHERE artist_name='{artist_name}'")
+    res = cur.execute(f"SELECT artist_id FROM subscriptions WHERE channel_id={channel.id}")
     artist_id = res.fetchone()[0]
     if artist_id is None:
         await channel.send("sth's wrong! We can't find the artist...")
@@ -186,7 +196,6 @@ async def reply(ctx, artist_name, text):
     artist = await bot.fetch_user(artist_id)
     artist_channel = await artist.create_dm()
     await artist_channel.send(text)
-
 
 # 輔助指令區
 @bot.command()
@@ -214,16 +223,41 @@ async def get_all_artists_data(ctx):
 
 @bot.command(pass_context=True)
 @commands.is_owner()
-async def get_all_subscriber(ctx, aid):
+async def get_all_subscribers(ctx, aid):
     res = cur.execute(f"SELECT artist_name FROM artists WHERE user_id={aid}")
     artist_name = res.fetchone()[0]
-    if artist_name is None:
-        await ctx.channel.send("sth's wrong! We can't find the artist...")
-    else:
-        res = cur.execute(f"SELECT * FROM {artist_name}")
-        values = res.fetchall()
-        await ctx.channel.send(values)
-    
+    res = cur.execute(f"SELECT * FROM {artist_name}")
+    values = res.fetchall()
+    await ctx.channel.send(values)
+
+
+@bot.command(pass_context=True)
+@commands.is_owner()
+async def create_sub_table(ctx):
+    await ctx.channel.send("creating...")
+    cur.execute(f"""CREATE TABLE subscriptions (
+    channel_id INTEGER UNIQUE,
+    artist_id INTEGER
+    )""")
+    con.commit()
+    res = cur.execute(f"SELECT * FROM artists")
+    values = res.fetchall()
+    for artist in values:
+        artist_id = artist[0]
+        artist_name = artist[1]
+        print("fetching from "+artist_name)
+        res = cur.execute(f"SELECT id FROM {artist_name}")
+        channel_ids = res.fetchall()
+        for ci in channel_ids:
+            channel_id = ci[0]
+            try:
+                cur.execute(f"""INSERT INTO subscriptions
+                VALUES ({channel_id}, {artist_id})""")
+                con.commit()
+            except:
+                print("The channel subscribed to multiple artists, skipping insertion...")
+
+
 
 try:
     bot.run(os.getenv("TOKEN"))
