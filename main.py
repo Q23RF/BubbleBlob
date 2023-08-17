@@ -60,7 +60,7 @@ async def init(ctx, artist_name):
     artist_channel = ctx.channel
     try:
         cur.execute(f"""INSERT INTO artists VALUES (
-        {artist.id}, '{artist_name}', 'none', "default.png", '#E4B8D6')""")
+        {artist.id}, '{artist_name}', 'none', "pfp/default.png", '#E4B8D6')""")
         con.commit()
         await artist_channel.send("You have successfully registered as an artist!")
     except:
@@ -231,9 +231,8 @@ async def img(ctx):
         if artist_nickname == "none":
             artist_nickname = artist_name
         channel = bot.get_channel(channel_id)
-        msg = "("+artist_name+")"+artist_nickname+":"
         try:
-            await channel.send(msg, files=[await f.to_file() for f in attachments])
+            await channel.send(files=[await f.to_file() for f in attachments])
         except Exception as e:
             print(e)
             #cur.execute(f"""DELETE FROM subscriptions
@@ -287,7 +286,7 @@ async def bbl(ctx, text):
             #WHERE channel_id={channel_id}""")
             #con.commit()
 
-
+# TODO: delete old pfp file
 @bot.command(pass_context=True)
 async def change_pfp(ctx):
     artist = ctx.author
@@ -308,7 +307,7 @@ async def change_pfp(ctx):
 @commands.is_owner()
 async def add_columns(ctx):
     cur.execute("""ALTER TABLE artists
-    ADD pfp_route TEXT DEFAULT 'default.png'""")
+    ADD pfp_route TEXT DEFAULT 'pfp/default.png'""")
     con.commit()
     cur.execute("""ALTER TABLE artists
     ADD artist_color TEXT DEFAULT '#E4B8D6'""")
@@ -364,15 +363,6 @@ async def get_all_subscribers_data(ctx, aid):
 
 @bot.command(pass_context=True)
 @commands.is_owner()
-async def reset_cnt(ctx):
-    cur.execute(f"""UPDATE subscriptions
-    SET cnt=0""")
-    con.commit()
-    await ctx.channel.send("done!")
-
-
-@bot.command(pass_context=True)
-@commands.is_owner()
 async def delete_subscription(ctx, channel_id):
     cur.execute(f"""DELETE FROM subscriptions
     WHERE channel_id={channel_id}""")
@@ -384,12 +374,6 @@ async def delete_subscription(ctx, channel_id):
 @commands.is_owner()
 async def server_cnt(ctx):
   await ctx.channel.send( f"I'm in {len(bot.guilds)} servers!")
-
-
-@bot.command(pass_context=True)
-@commands.is_owner()
-async def color_msg(ctx):
-  await ctx.channel.send("\u001b[1;40;32mThat's some cool formatted text, right?")
 
 
 try:
