@@ -2,6 +2,7 @@ import discord    # stable on 1.7.3
 from discord.ext import tasks, commands
 import os
 import sqlite3
+import time
 from keep_alive import keep_alive
 
 keep_alive()
@@ -245,33 +246,62 @@ async def img(ctx):
 async def bbl(ctx, text):
     artist = ctx.author
     artist_channel = await artist.create_dm()
+
     res = cur.execute(f"""SELECT * FROM artists
     WHERE user_id={artist.id}""")
     values = res.fetchone()
     artist_name = values[1]
+
+    pfp_route = values[3]
+    if pfp_route is None:
+        pfp_route = "pfp/default.png"
+
     artist_color = values[4]
-    color=discord.Color.from_str(artist_color)
+    try:
+        color = discord.Color.from_str(artist_color)
+    except:
+        color = discord.Color.from_str("#E4B8D6")
+
     res = cur.execute(f"""SELECT * FROM subscriptions
     WHERE artist_id={artist.id}""")
     subscription = res.fetchall()
+
     for s in subscription:
         channel_id = s[0]
         nickname = s[3]
         artist_nickname = s[4]
         if artist_nickname == "none":
             artist_nickname = artist_name
+
         channel = bot.get_channel(channel_id)
         display_name = "("+artist_name+")"+artist_nickname+": "
         embed = discord.Embed(title=text.replace("y/n", nickname),
                              color=color)
-        embed.set_author(name=display_name)
+        embed.set_author(name=display_name, icon_url="attachment://image.png")
         try:
-            await channel.send(embed=embed)
+            file = discord.File(pfp_route, filename="image.png")
+            await channel.send(file=file, embed=embed)
         except Exception as e:
             print(e)
             #cur.execute(f"""DELETE FROM subscriptions
             #WHERE channel_id={channel_id}""")
             #con.commit()
+
+
+@bot.command(pass_context=True)
+async def change_pfp(ctx):
+    artist = ctx.author
+    artist_channel = ctx.channel
+    attachments = ctx.message.attachments
+    if len(attachments) == 0:
+        await artist_channel.send("Please provide a picture.")
+    else:
+        fn = "pfp/"+str(time.time())+".png"
+        await attachments[0].save(fn)
+        cur.execute(f"""UPDATE artists
+        SET pfp_route='{fn}' WHERE user_id={artist.id}""")
+        con.commit()
+        await artist_channel.send("Profile pic updated!")
 
 
 @bot.command(pass_context=True)
