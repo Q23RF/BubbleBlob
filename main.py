@@ -18,7 +18,6 @@ async def on_ready():
     print('We have logged in as {0.user}'.format(bot))
 
 
-
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
@@ -86,19 +85,6 @@ async def close(ctx, artist_name):
 
 
 @bot.command(pass_context=True)
-async def set_welcome(ctx, welcome):
-    artist = ctx.author
-    channel = ctx.channel
-    try:
-        cur.execute(f"""UPDATE artists
-        SET welcome='{welcome}' WHERE user_id={artist.id}""")
-        con.commit()
-        await channel.send("Welcome message updated!")
-    except:
-        await channel.send("Welcome message update failed.")
-
-
-@bot.command(pass_context=True)
 async def subscribe(ctx, artist_name, nickname):
     channel = ctx.channel
     try:
@@ -160,14 +146,15 @@ async def change_artist_name(ctx, new_name):
         con.commit()
         await artist_channel.send("Artist\'s name changed!")
 
+
 @bot.command(pass_context=True)
 async def change_artist_color(ctx, color_code):
     artist = ctx.author
     artist_channel = ctx.channel
     res = cur.execute(f"""SELECT artist_name FROM artists
     WHERE user_id={artist.id}""")
-    old_name = res.fetchone()[0]
-    if old_name == None:
+    artist_name = res.fetchone()[0]
+    if artist_name == None:
         await artist_channel.send("You are not an artist yet.")
     else:
         res = cur.execute(f"""SELECT channel_id FROM subscriptions
@@ -175,7 +162,7 @@ async def change_artist_color(ctx, color_code):
         channel_ids = res.fetchall()
         for channel_id in channel_ids:
             channel = bot.get_channel(channel_id[0])
-            msg = old_name+" have changed their color to "+color_code+"!"
+            msg = artist_name+" have changed their color to "+color_code+"!"
             try:
                 await channel.send(msg)
             except Exception as e:
@@ -188,6 +175,57 @@ async def change_artist_color(ctx, color_code):
         SET artist_color='{color_code}' WHERE user_id={artist.id}""")
         con.commit()
         await artist_channel.send("Artist\'s color changed!")
+
+
+@bot.command(pass_context=True)
+async def change_description(ctx, description):
+    artist = ctx.author
+    artist_channel = ctx.channel
+    res = cur.execute(f"""SELECT artist_name FROM artists
+    WHERE user_id={artist.id}""")
+    artist_name = res.fetchone()[0]
+    if artist_name == None:
+        await artist_channel.send("You are not an artist yet.")
+    else:
+        cur.execute(f"""UPDATE artists
+        SET description='{description}' WHERE user_id={artist.id}""")
+        con.commit()
+        await artist_channel.send("Description changed!")
+
+
+@bot.command(pass_context=True)
+async def change_pfp(ctx):
+    artist = ctx.author
+    artist_channel = ctx.channel
+    attachments = ctx.message.attachments
+    if len(attachments) == 0:
+        await artist_channel.send("Please provide a picture.")
+    else:
+        res = cur.execute(f"""SELECT pfp_route FROM artists
+        WHERE user_id={artist.id}""")
+        old_route = res.fetchone()[0]
+        print("deleting "+old_route)
+        os.remove(old_route)
+        fn = "pfp/"+str(time.time())+".png"
+        await attachments[0].save(fn)
+        cur.execute(f"""UPDATE artists
+        SET pfp_route='{fn}' WHERE user_id={artist.id}""")
+        con.commit()
+        await artist_channel.send("Profile pic updated!")
+
+
+@bot.command(pass_context=True)
+async def set_welcome(ctx, welcome):
+    artist = ctx.author
+    channel = ctx.channel
+    try:
+        cur.execute(f"""UPDATE artists
+        SET welcome='{welcome}' WHERE user_id={artist.id}""")
+        con.commit()
+        await channel.send("Welcome message updated!")
+    except:
+        await channel.send("Welcome message update failed.")
+
 
 
 # 暱稱更新區
@@ -260,6 +298,8 @@ async def bbl(ctx, text):
         color = discord.Color.from_str(artist_color)
     except:
         color = discord.Color.from_str("#E4B8D6")
+    description = values[5]
+
 
     res = cur.execute(f"""SELECT * FROM subscriptions
     WHERE artist_id={artist.id}""")
@@ -277,6 +317,8 @@ async def bbl(ctx, text):
         embed = discord.Embed(title=text.replace("y/n", nickname),
                              color=color)
         embed.set_author(name=display_name, icon_url="attachment://image.png")
+        if description is not None:
+            embed.set_footer(text=description)
         try:
             file = discord.File(pfp_route, filename="image.png")
             await channel.send(file=file, embed=embed)
@@ -285,34 +327,6 @@ async def bbl(ctx, text):
             #cur.execute(f"""DELETE FROM subscriptions
             #WHERE channel_id={channel_id}""")
             #con.commit()
-
-# TODO: delete old pfp file
-@bot.command(pass_context=True)
-async def change_pfp(ctx):
-    artist = ctx.author
-    artist_channel = ctx.channel
-    attachments = ctx.message.attachments
-    if len(attachments) == 0:
-        await artist_channel.send("Please provide a picture.")
-    else:
-        fn = "pfp/"+str(time.time())+".png"
-        await attachments[0].save(fn)
-        cur.execute(f"""UPDATE artists
-        SET pfp_route='{fn}' WHERE user_id={artist.id}""")
-        con.commit()
-        await artist_channel.send("Profile pic updated!")
-
-
-@bot.command(pass_context=True)
-@commands.is_owner()
-async def add_columns(ctx):
-    cur.execute("""ALTER TABLE artists
-    ADD pfp_route TEXT DEFAULT 'pfp/default.png'""")
-    con.commit()
-    cur.execute("""ALTER TABLE artists
-    ADD artist_color TEXT DEFAULT '#E4B8D6'""")
-    con.commit()
-    print("done!")
 
 
 @bot.command(pass_context=True)
@@ -363,9 +377,9 @@ async def get_all_subscribers_data(ctx, aid):
 
 @bot.command(pass_context=True)
 @commands.is_owner()
-async def delete_subscription(ctx, channel_id):
-    cur.execute(f"""DELETE FROM subscriptions
-    WHERE channel_id={channel_id}""")
+async def add_column(ctx):
+    cur.execute(f"""ALTER TABLE artists
+    ADD description TEXT""")
     con.commit()
     await ctx.channel.send("done!")
 
@@ -373,7 +387,14 @@ async def delete_subscription(ctx, channel_id):
 @bot.command(pass_context=True)
 @commands.is_owner()
 async def server_cnt(ctx):
-  await ctx.channel.send( f"I'm in {len(bot.guilds)} servers!")
+    n = len(bot.guilds)
+    bar = "["
+    for i in range(0, n):
+        bar += "\|"
+    for i in range(n, 75):
+        bar += " "
+    bar += "]"+str(n)+"/75"
+    await ctx.channel.send(bar)
 
 
 try:

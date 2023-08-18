@@ -1,7 +1,7 @@
 # BubbleBlob
 | [點這裡加入官方伺服器](https://t.co/GpORqHYbEo) | [點這裡將機器人加入你的伺服器](https://t.co/uJqjtSgcfG) |
 
-以Discord機器人(BubbleBlob#2986)實作的仿泡泡服務。
+模仿[Bubble](https://ba-store.dear-u.co/dontalkshop/main/aboutDearU)以Discord機器人(BubbleBlob#2986)實作的半匿名聊天室服務。
 
 ## 使用方式
 ### 訂閱者
