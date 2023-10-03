@@ -30,23 +30,24 @@ async def on_message(message):
             artist_id = v[1]
             cnt = v[2]
             subscriber_channel = bot.get_channel(channel_id)
+            print("updating "+str(channel_id))
             try:
                 msg = await subscriber_channel.send("🫧"+str(cnt))
-                # 天數釘選測試
                 try:
                     pins = await subscriber_channel.pins()
                     for pinned in pins:
-                            if pinned.content == "🫧"+str(cnt-1):
-                                await pinned.unpin()
+                        if pinned.content == "🫧"+str(cnt-1):
+                            await pinned.unpin()
                     await msg.pin()
                 except:
-                    print("pinning failed")
+                    pass
                 
-            except:
-                print(str(channel_id)+" has been deleted, skipping...")
-                cur.execute(f"""DELETE FROM subscriptions
-                WHERE channel_id={channel_id}""")
-                con.commit()
+            except Exception as e:
+                if e.args[0] == "'NoneType' object has no attribute 'send'":
+                    cur.execute(f"""DELETE FROM subscriptions
+                    WHERE artist_id={artist_id}
+                    AND channel_id={channel_id}""")
+                    con.commit()
         cur.execute("UPDATE subscriptions SET cnt=cnt+1")
         con.commit()
         await message.channel.send("++")
@@ -106,8 +107,9 @@ async def subscribe(ctx, artist_name, nickname):
         else:
             await channel.send(welcome)
         await artist_channel.send("You have a new subscriber!")
-    except:
-        await channel.send("Subscription failed.")
+    except Exception as e:
+        #await channel.send("Subscription failed.")
+        await channel.send(e)
 
 @bot.command(pass_context=True)
 async def unsubscribe(ctx):
@@ -136,11 +138,8 @@ async def change_artist_name(ctx, new_name):
             msg = old_name+" have changed their name to "+new_name+"!"
             try:
                 await channel.send(msg)
-            except:
-                print("Deleting "+str(channel_id))
-                cur.execute(f"""DELETE FROM subscriptions
-                WHERE channel_id={channel_id}""")
-                con.commit()
+            except Exception as e:
+                print(e)
         cur.execute(f"""UPDATE artists
         SET artist_name='{new_name}' WHERE user_id={artist.id}""")
         con.commit()
@@ -167,10 +166,6 @@ async def change_artist_color(ctx, color_code):
                 await channel.send(msg)
             except Exception as e:
                 print(e)
-                #print("Deleting "+str(channel_id))
-                #cur.execute(f"""DELETE FROM subscriptions
-                #WHERE channel_id={channel_id}""")
-                #con.commit()
         cur.execute(f"""UPDATE artists
         SET artist_color='{color_code}' WHERE user_id={artist.id}""")
         con.commit()
@@ -273,14 +268,11 @@ async def img(ctx):
             await channel.send(files=[await f.to_file() for f in attachments])
         except Exception as e:
             print(e)
-            #cur.execute(f"""DELETE FROM subscriptions
-            #WHERE channel_id={channel_id}""")
-            #con.commit()
 
 
 @bot.command(pass_context=True)
 @commands.dm_only()
-async def bbl(ctx, text):
+async def bbl(ctx, text, url:str=None):
     artist = ctx.author
     artist_channel = await artist.create_dm()
 
@@ -314,8 +306,10 @@ async def bbl(ctx, text):
 
         channel = bot.get_channel(channel_id)
         display_name = "("+artist_name+")"+artist_nickname+": "
-        embed = discord.Embed(title=text.replace("y/n", nickname),
-                             color=color)
+        if url is None:
+            embed = discord.Embed(title=text.replace("y/n", nickname), color=color)
+        else:
+            embed = discord.Embed(title=text.replace("y/n", nickname), url=url, color=color)
         embed.set_author(name=display_name, icon_url="attachment://image.png")
         if description is not None:
             embed.set_footer(text=description)
@@ -323,11 +317,11 @@ async def bbl(ctx, text):
             file = discord.File(pfp_route, filename="image.png")
             await channel.send(file=file, embed=embed)
         except Exception as e:
-            print(e)
-            #cur.execute(f"""DELETE FROM subscriptions
-            #WHERE channel_id={channel_id}""")
-            #con.commit()
-
+            if e.args[0] == "'NoneType' object has no attribute 'send'":
+                cur.execute(f"""DELETE FROM subscriptions
+                WHERE artist_id={artist.id}
+                AND channel_id={channel_id}""")
+                con.commit()
 
 @bot.command(pass_context=True)
 async def reply(ctx, text):
@@ -338,8 +332,8 @@ async def reply(ctx, text):
         artist = await bot.fetch_user(artist_id)
         artist_channel = await artist.create_dm()
         await artist_channel.send(text)
-    except:
-        await channel.send("Sth's wrong! We can't find the artist...")
+    except Exception as e:
+        await channel.send(e)
 
 
 # 輔助指令區
@@ -377,9 +371,9 @@ async def get_all_subscribers_data(ctx, aid):
 
 @bot.command(pass_context=True)
 @commands.is_owner()
-async def add_column(ctx):
-    cur.execute(f"""ALTER TABLE artists
-    ADD description TEXT""")
+async def set_cnt(ctx):
+    cur.execute(f"""UPDATE subscriptions
+    SET cnt=cnt+1""")
     con.commit()
     await ctx.channel.send("done!")
 
