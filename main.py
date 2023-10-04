@@ -377,6 +377,14 @@ async def set_cnt(ctx):
     con.commit()
     await ctx.channel.send("done!")
 
+@bot.command(pass_context=True)
+@commands.is_owner()
+async def delete_subscription(ctx, channel_id):
+    cur.execute(f"""DELETE FROM subscriptions
+    WHERE channel_id={channel_id}""")
+    con.commit()
+    await ctx.channel.send("done!")
+
 
 @bot.command(pass_context=True)
 @commands.is_owner()
